@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,8 +10,8 @@ plugins {
 
 android {
     namespace = "com.example.cron_expr_app"
-    // Explicitly target Android 15 / API 35 for Play compliance (Aug 31, 2025 cutoff).
-    compileSdk = 35
+    // Compile with latest available (36) to satisfy plugin requirements; target remains 35 for Play.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -36,8 +39,8 @@ android {
     signingConfigs {
         create("release") {
             if (hasReleaseKeystore) {
-                val props = java.util.Properties().apply {
-                    load(java.io.FileInputStream(rootProject.file("key.properties")))
+                val props = Properties().apply {
+                    load(FileInputStream(rootProject.file("key.properties")))
                 }
                 storeFile = file(props["storeFile"] as String)
                 storePassword = props["storePassword"] as String
