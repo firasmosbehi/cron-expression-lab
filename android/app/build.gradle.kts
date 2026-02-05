@@ -31,11 +31,29 @@ android {
         versionName = flutter.versionName
     }
 
+    // Load release signing config if key.properties exists (used by CI publish job).
+    val hasReleaseKeystore = rootProject.file("key.properties").exists()
+    signingConfigs {
+        create("release") {
+            if (hasReleaseKeystore) {
+                val props = java.util.Properties().apply {
+                    load(java.io.FileInputStream(rootProject.file("key.properties")))
+                }
+                storeFile = file(props["storeFile"] as String)
+                storePassword = props["storePassword"] as String
+                keyAlias = props["keyAlias"] as String
+                keyPassword = props["keyPassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

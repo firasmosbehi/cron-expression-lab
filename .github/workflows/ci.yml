@@ -36,13 +36,62 @@ jobs:
       - name: Accept Android licenses
         run: yes | flutter doctor --android-licenses
       - run: flutter pub get
-      - name: Build Play App Bundle
+      - name: Build Play App Bundle (debug key)
         run: flutter build appbundle --release --no-shrink
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: appbundle
           path: build/app/outputs/bundle/release/app.aab
+
+  android-deploy:
+    if: >
+      github.ref == 'refs/heads/master' &&
+      secrets.ANDROID_KEYSTORE_BASE64 != '' &&
+      secrets.ANDROID_KEYSTORE_PASSWORD != '' &&
+      secrets.ANDROID_KEY_ALIAS != '' &&
+      secrets.ANDROID_KEY_ALIAS_PASSWORD != '' &&
+      secrets.PLAY_SERVICE_ACCOUNT_JSON != ''
+    runs-on: ubuntu-latest
+    needs: analyze-and-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: stable
+          cache: true
+          android: true
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+      - name: Decode upload keystore
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+          cat > android/key.properties <<'EOF'
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyPassword=$ANDROID_KEY_ALIAS_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_ALIAS_PASSWORD: ${{ secrets.ANDROID_KEY_ALIAS_PASSWORD }}
+      - run: flutter pub get
+      - name: Build signed AAB
+        run: flutter build appbundle --release --no-shrink
+      - name: Upload to Play (internal track by default)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ env.PACKAGE_NAME }}
+          releaseFiles: build/app/outputs/bundle/release/app.aab
+          track: ${{ env.PLAY_TRACK }}
+          status: draft
+        env:
+          PACKAGE_NAME: com.example.cron_expr_app
+          PLAY_TRACK: internal
 
   ios-build:
     runs-on: macos-latest
