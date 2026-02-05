@@ -31,6 +31,24 @@ flutter run   # iOS and Android
 flutter test
 ```
 
+## Release builds
+- Android AAB: `./scripts/build_android_release.sh` (uses `build/app/outputs/bundle/release/app.aab`)
+- iOS archive (no codesign): `./scripts/build_ios_release.sh` then open Xcode Organizer to sign/upload.
+
+## CI
+GitHub Actions (`.github/workflows/ci.yml`) runs tests, builds a Play App Bundle, and builds iOS (no codesign) on every push/PR.
+
+## Store prep (quick)
+- Privacy policy: `store/privacy-policy.md`
+- Google Play checklist: `store/metadata/play-listing.md`
+- App Store checklist: `store/metadata/app-store-listing.md`
+- Screenshot ideas: `store/metadata/screenshots-checklist.md`
+
 ## Monetization (concept)
 - Free tier: ads placeholder.
 - Pro (one-time $1.99): saved recipes, dark mode toggle, ad removal.
+
+## Before publishing
+- Update unique IDs: `applicationId` (Android) and bundle ID (iOS) to your domain.
+- Provide real app icon and store graphics.
+- Wire up billing if you plan to sell “Pro” as an IAP; declare ads/analytics if added.
